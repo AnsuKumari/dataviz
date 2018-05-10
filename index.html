@@ -1,0 +1,174 @@
+<html>
+  <head>
+  	<meta charset="utf-8">
+  	<title>Google Dashboard</title>
+    <script type="text/javascript" src="helper.js"></script>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+
+    <!-- Load bootstrap -->
+    <link rel="stylesheet" type="text/css" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css">
+
+    <!-- load zing chart api -->
+    <!-- <script src= "https://cdn.zingchart.com/zingchart.min.js"></script>
+	<script> zingchart.MODULESDIR = "https://cdn.zingchart.com/modules/";
+		ZC.LICENSE = ["569d52cefae586f634c54f86dc99e6a9","ee6b7db5b51705a13dc2339db3edaf6d"];</script> -->
+    
+    <!--Load the AJAX API-->
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript">
+      google.charts.load('current', {'packages':['corechart', 'controls']});
+      google.charts.setOnLoadCallback(drawDashboard);
+
+      function drawDashboard() {
+      	$.getJSON("jsondata.json", function(json) {  // Get data from json file
+	        var dataTable = google.visualization.arrayToDataTable(convertJsonToArray(json));  // Populate data table
+          var dashboard = new google.visualization.Dashboard(document.getElementById('dashboard_div')); // Create a dashboard
+
+          var domain = {'sector': 2, 'topic': 3, 'region': 6, 'pestle': 13};  // Define domain columns with name
+          var range = {'intensity': 1, 'relevance': 12, 'likelihood': 16};  // Define range columne with name
+          
+          getData = function(name) {
+            var d = google.visualization.data.group(dataTable, [domain[name]], [
+            {'column': range.intensity, 'aggregation': google.visualization.data.max, 'type': 'number'},
+            {'column': range.relevance, 'aggregation': google.visualization.data.max, 'type': 'number'},
+            {'column': range.likelihood, 'aggregation': google.visualization.data.max, 'type': 'number'}
+            ]);
+            return d;
+          }
+          var data = getData('topic');
+
+          // Create a category filter
+          var category = new google.visualization.ControlWrapper({
+            'controlType': 'CategoryFilter',
+            'containerId': 'topic_div',
+            'options': {
+              'filterColumnLabel': 'topic'
+            }
+          });
+
+          // Create a pie chart, passing some options
+          var chart = new google.visualization.ChartWrapper({
+            'chartType': 'AreaChart',
+            'containerId': 'chart_div',
+            'options': {
+              'width': 1200,
+              'height': 400,
+            },
+            'view': {'columns': [0, 1]}
+          });
+
+          dashboard.bind(category, chart); // Establish dependencies
+          dashboard.draw(data); // Draw the dashboard
+
+          changeCol = function() {
+          	var checks = document.getElementsByName('line');
+          	var cols = [0];
+          	if (checks[0].checked)	cols.push(1);
+          	if (checks[1].checked)	cols.push(2);
+          	if (checks[2].checked)	cols.push(3);
+          	if (cols.length < 2){
+          		checks[0].checked = true;
+          		cols.push(1);
+          	}
+	          chart.setView({'columns': cols});
+	          chart.draw();
+	        };
+
+	        changeDomain = function(domainName) {
+	      	  category.setContainerId(domainName + '_div');
+	      	  category.setOption('filterColumnLabel', domainName);
+	      	  dashboard.draw(getData(domainName));
+	        };
+
+        });
+      }
+    </script>
+  </head>
+
+  <body>
+    <div class="container-fluid">
+    <!--Div that will hold the dashboard-->
+    <div id="dashboard_div">
+
+      <div id='myChart'></div>
+      <!--Divs that will hold each control and chart-->
+      <div id="filter_div">
+        <input type="checkbox" name="line" onclick="changeCol();" checked>Intensity<br>
+        <input type="checkbox" name="line" onclick="changeCol();">Relevance<br>
+        <input type="checkbox" name="line" onclick="changeCol();">Likelihood<br>
+        <input type="radio" name="domain" onclick="changeDomain('topic');" checked>Topic<div id="topic_div"></div><br>
+        <input type="radio" name="domain" onclick="changeDomain('sector');">Sector<div id="sector_div"></div><br>
+        <input type="radio" name="domain" onclick="changeDomain('region');">Region<div id="region_div"></div><br>
+        <input type="radio" name="domain" onclick="changeDomain('pestle');">Pestle<div id="pestle_div"></div><br>
+      </div>
+      <div id="chart_div"></div>
+    </div>
+  </div>
+
+    
+    <!-- Make radar chart using zingg chart -->
+    <!-- <script type="text/javascript">
+    var myConfig = {
+      type : 'radar',
+      plot : {
+        aspect : 'area',
+        animation: {
+          effect:3,
+          sequence:1,
+          speed:700
+        }
+      },
+      scaleV : {
+        visible : false
+      },
+      scaleK : {
+        values : '0:5:1',
+        labels : ['Dogs','Cats','Fish','Birds', 'Reptiles', 'Horses' ],
+        item : {
+          fontColor : '#607D8B',
+          backgroundColor : "white",
+          borderColor : "#aeaeae",
+          borderWidth : 1,
+          padding : '5 10',
+          borderRadius : 10
+        },
+        refLine : {
+          lineColor : '#c10000'
+        },
+        tick : {
+          lineColor : '#59869c',
+          lineWidth : 2,
+          lineStyle : 'dotted',
+          size : 20
+        },
+        guide : {
+          lineColor : "#607D8B",
+          lineStyle : 'solid',
+          alpha : 0.3,
+          backgroundColor : "#c5c5c5 #718eb4"
+        }
+      },
+      series : [
+        {
+          values : [59, 39, 38, 19, 21, 35],
+          text:'farm'
+        },
+        {
+          values : [20, 20, 54, 41, 41, 35],
+          lineColor : '#53a534',
+          backgroundColor : '#689F38'
+        }
+      ]
+    };
+     
+    zingchart.render({ 
+    	id : 'myChart', 
+    	data : myConfig, 
+    	height: '100%', 
+    	width: '100%' 
+    });
+
+
+    </script> -->
+  </body>
+</html>
